@@ -10,6 +10,7 @@ from evidec.core.rule_utils import RuleDisplayContext, describe_rule_threshold, 
 from evidec.report.renderer import render_markdown
 
 if TYPE_CHECKING:  # pragma: no cover
+    from evidec.bayes.beta_binomial import BayesResult
     from evidec.core.decision_rule import Decision
     from evidec.core.experiment import Experiment, StatResult
 
@@ -34,6 +35,7 @@ class EvidenceReport:
     decision_rule: str
     interpretation: str
     markdown: str
+    bayes_result: BayesResult | None = None
 
     @classmethod
     def from_result(
@@ -42,6 +44,7 @@ class EvidenceReport:
         rule: RuleDisplayContext,
         decision: Decision,
         stat_result: StatResult,
+        bayes_result: BayesResult | None = None,
     ) -> EvidenceReport:
         """実験結果から証拠レポートを生成する。
 
@@ -61,13 +64,14 @@ class EvidenceReport:
         decision_rule, _ = describe_rule_threshold(rule, ratio)
 
         interpretation = decision.reason
-        markdown = render_markdown(experiment, decision, stat_result, rule)
+        markdown = render_markdown(experiment, decision, stat_result, rule, bayes_result)
         return cls(
             summary=summary,
             statistical_evidence=statistical,
             decision_rule=decision_rule,
             interpretation=interpretation,
             markdown=markdown,
+            bayes_result=bayes_result,
         )
 
 
