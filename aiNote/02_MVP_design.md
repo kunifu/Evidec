@@ -7,10 +7,11 @@
 
 ## 2. 技術選定
 - 言語・ランタイム: Python ≥ 3.10（パターンマッチング、型ヒントの充実を活用）。
-- パッケージ管理: `pyproject.toml` + `pip` / `uv`（シンプルに依存最小化。Poetry は任意）。
+- パッケージ管理: `pyproject.toml` を基盤とし、インストールは **uv** を推奨（`uv pip install -e '.[dev]'`）。pip も互換維持。
+- タスクランナー: **poethepoet** を採用し、`poe lint|format|typecheck|test|check` を定義。
 - コア依存: `numpy`, `scipy`（z-test, t-test）, `pandas`（Series 入力サポート）。
-- 開発用依存: `pytest`, `pytest-cov`, `mypy`, `ruff`（フォーマッタ兼リンタ）を推奨。
-- 配布形態: PyPI 配布を前提に `evidec` パッケージを PEP517 ビルド（hatchling か setuptools）。
+- 開発用依存: `pytest`, `pytest-cov`, `mypy`, `ruff`, `poethepoet`。
+- 配布形態: PyPI 配布を前提に `evidec` パッケージを PEP517 ビルド（hatchling）。
 - ドキュメント: README + `examples/basic_ab.py`。後続で `docs/` に拡張可能。
 
 ## 3. アーキテクチャ概要
@@ -117,10 +118,14 @@ print(report.markdown)
 - 将来拡張: 事前に `StatResult` に `effect_size`（Cohen's d 等）フィールドを追加できる余白を確保。
 
 ## 11. 開発フロー
-- Lint: `ruff check .`、Format: `ruff format .`
-- Type check: `mypy evidec`
-- Test: `pytest -q`
-- CI（後続）：GitHub Actions で上記 3 ステップと `examples/basic_ab.py` 実行を組み合わせる。
+- uv 推奨: `uv pip install -e '.[dev]'`
+- poe タスク（pyproject定義）:
+  - `poe lint` → `ruff check .`
+  - `poe format` → `ruff format .`
+  - `poe typecheck` → `mypy evidec`
+  - `poe test` → `pytest -q`
+  - `poe check` → 上記 lint+type+test を連鎖
+- CI（後続）：GitHub Actions で `uv pip install -e '.[dev]'` → `poe check` → `poe test examples/basic_ab.py` 実行を組み合わせる。
 
 ## 12. リスクと対応
 - **正規近似の妥当性**: サンプル小時の z-test 精度低下 → サンプル条件をドキュメントに明記し警告を出す。
