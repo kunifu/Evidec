@@ -17,3 +17,17 @@ def test_サンプルスクリプトが実行されレポートを返す():
     # Assert
     assert hasattr(report, "markdown")
     assert "エビデンスレポート" in report.markdown
+
+
+def test_非劣性サンプルも実行できる():
+    # Arrange
+    import importlib
+
+    # Act
+    example = importlib.import_module("examples.non_inferiority")
+    report = example.main()
+
+    # Assert
+    assert hasattr(report, "markdown")
+    # "非劣性クリア" (reason) または "許容悪化幅" (decision rule) のいずれかが含まれる
+    assert "非劣性" in report.markdown or "許容悪化幅" in report.markdown

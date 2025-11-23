@@ -6,15 +6,12 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from evidec.core.formatters import _fmt_ci, _fmt_numeric, _fmt_p
+from evidec.core.rule_utils import RuleDisplayContext, describe_rule_threshold, is_ratio_metric
 from evidec.report.renderer import render_markdown
 
 if TYPE_CHECKING:  # pragma: no cover
-    from evidec.core.decision_rule import Decision, DecisionRule
+    from evidec.core.decision_rule import Decision
     from evidec.core.experiment import Experiment, StatResult
-
-
-def _is_ratio(stat_result: StatResult) -> bool:
-    return stat_result.baseline is not None and 0 <= stat_result.baseline <= 1
 
 
 @dataclass(frozen=True)
@@ -42,7 +39,7 @@ class EvidenceReport:
     def from_result(
         cls,
         experiment: Experiment,
-        rule: DecisionRule,
+        rule: RuleDisplayContext,
         decision: Decision,
         stat_result: StatResult,
     ) -> EvidenceReport:
@@ -51,7 +48,7 @@ class EvidenceReport:
         統計結果・判定ルール・意思決定を統合し、
         ビジネス向けの構造化されたレポートを作成する。
         """
-        ratio = _is_ratio(stat_result)
+        ratio = is_ratio_metric(stat_result)
         effect_str = _fmt_numeric(stat_result.effect, ratio)
         ci_str = _fmt_ci(stat_result.ci_low, stat_result.ci_high, ratio)
 
@@ -60,10 +57,9 @@ class EvidenceReport:
             f"{stat_result.method} 効果={effect_str}, 95%CI={ci_str}, "
             f"p値={_fmt_p(stat_result.p_value)}"
         )
-        decision_rule = (
-            f"α={rule.alpha:.3f}, 最小リフト={_fmt_numeric(rule.min_lift, ratio)}, "
-            f"指標の目標方向={rule.metric_goal}"
-        )
+
+        decision_rule, _ = describe_rule_threshold(rule, ratio)
+
         interpretation = decision.reason
         markdown = render_markdown(experiment, decision, stat_result, rule)
         return cls(

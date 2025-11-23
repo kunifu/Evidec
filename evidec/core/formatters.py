@@ -11,12 +11,18 @@ def _fmt_p(p_value: float) -> str:
     return "<0.0001" if p_value < 0.0001 else f"{p_value:.4f}"
 
 
-def _fmt_numeric(value: float, as_percent: bool) -> str:
-    """数値をパーセントまたは小数点表記でフォーマットする。"""
+def _fmt_numeric(value: float, as_percent: bool, force_sign: bool = True) -> str:
+    """数値をパーセントまたは小数点表記でフォーマットする。
 
+    Args:
+        value: フォーマットする数値
+        as_percent: パーセント表記にするかどうか
+        force_sign: 正の数に+をつけるかどうか (デフォルト: True)
+    """
+    sign_str = "+" if force_sign else ""
     if as_percent:
-        return f"{value:+.1%}"
-    return f"{value:+.3f}"
+        return f"{value:{sign_str}.1%}"
+    return f"{value:{sign_str}.3f}"
 
 
 def _fmt_ci(ci_low: float, ci_high: float, as_percent: bool) -> str:

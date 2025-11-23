@@ -33,14 +33,31 @@ report = EvidenceReport.from_result(exp, rule, decision, result)
 print(report.markdown)
 ```
 
+### 悪化していないことを確認する（非劣性テスト）
+```python
+from evidec import EvidenceReport, Experiment, NonInferiorityRule
+
+exp = Experiment(name="variant_check", metric="cvr", variant_names=("original", "new"))
+result = exp.fit(control_data, treatment_data)
+
+# margin は「許容する悪化幅 (絶対差)」を表す。0.01 = 1pp まで悪化を許容。
+rule = NonInferiorityRule(alpha=0.05, margin=0.01, metric_goal="increase")
+decision = rule.judge(result)
+
+report = EvidenceReport.from_result(exp, rule, decision, result)
+print(report.markdown)
+```
+
 同梱のサンプルを実行する場合:
 ```bash
 python examples/basic_ab.py
+python examples/non_inferiority.py
 ```
 
 ## スコープ (MVP)
 - 2群の比率 z 検定・平均差 t 検定（独立サンプル）
 - p 値と最小リフトで GO / NO_GO / INCONCLUSIVE を判定する DecisionRule
+- 悪化していないことを確認する NonInferiorityRule（非劣性判定）
 - Markdown 形式の Evidence Report 生成（日本語）
 - Python API のみ（CLI / GUI は未提供）
 
