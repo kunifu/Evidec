@@ -13,9 +13,13 @@ from evidec.stats.ztest import _count_success_total
         (5, 3),  # success greater than total
     ],
 )
-def test_count_tuple_validation_errors(data):
+def test_成功数タプルが不正なら例外を投げる(data):
+    # Arrange
+    invalid = data
+
+    # Act & Assert
     with pytest.raises(ValueError):
-        _count_success_total(data)
+        _count_success_total(invalid)
 
 
 @pytest.mark.parametrize(
@@ -28,37 +32,62 @@ def test_count_tuple_validation_errors(data):
         (np.array([0, 1, 2]), ValueError),
     ],
 )
-def test_count_array_validation_errors(data, expected):
+def test_配列入力が不正なら例外を投げる(data, expected):
+    # Arrange
+    invalid = data
+
+    # Act & Assert
     with pytest.raises(expected):
-        _count_success_total(data)
+        _count_success_total(invalid)
 
 
-def test_count_success_total_accepts_bool_array():
-    successes, total = _count_success_total(np.array([True, False, True, True]))
+def test_bool配列を成功数に変換できる():
+    # Arrange
+    raw = np.array([True, False, True, True])
+
+    # Act
+    successes, total = _count_success_total(raw)
+
+    # Assert
     assert successes == 3
     assert total == 4
 
 
-def test_ztest_requires_treatment_success():
+def test_トリートメント成功数が必須():
+    # Arrange
+    control = (1, 10)
+
+    # Act & Assert
     with pytest.raises(ValueError):
-        ztest_proportions((1, 10), None, None)
+        ztest_proportions(control, None, None)
 
 
-def test_ztest_requires_int_when_total_is_passed():
+def test_total指定時はintでないとエラーになる():
+    # Arrange
+    control_value = 1.2
+    treatment_value = 1.3
+
+    # Act & Assert
     with pytest.raises(TypeError):
-        ztest_proportions(1.2, 10, (1, 10), None)
+        ztest_proportions(control_value, 10, (1, 10), None)
     with pytest.raises(TypeError):
-        ztest_proportions((1, 10), None, 1.3, 10)
+        ztest_proportions((1, 10), None, treatment_value, 10)
 
 
-def test_ztest_validates_positive_totals_after_normalisation():
+def test_total正規化後が正でないとエラーになる():
+    # Arrange & Act & Assert
     with pytest.raises(ValueError):
         ztest_proportions(1, -5, 1, 10)
 
 
-def test_ztest_pooled_variance_and_se_zero_checks():
+def test_分散ゼロやSEゼロならエラーになる():
+    # Arrange
+    all_zero = (0, 10)
+    all_one = (10, 10)
+
+    # Act & Assert
     with pytest.raises(ValueError):
-        ztest_proportions((0, 10), None, (0, 10), None)
+        ztest_proportions(all_zero, None, all_zero, None)
 
     with pytest.raises(ValueError):
-        ztest_proportions((10, 10), None, (0, 10), None)
+        ztest_proportions(all_one, None, all_zero, None)
