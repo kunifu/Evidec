@@ -70,7 +70,9 @@ def ttest_means(
         df = _welch_df(var1, var2, n1, n2)
         se = np.sqrt(var1 / n1 + var2 / n2)
 
+    # 95%信頼区間の臨界値（両側5%、上側2.5%点）
     t_crit = stats.t.ppf(0.975, df)
+    # 効果量 ± t臨界値 × 標準誤差 で95%信頼区間を計算
     ci_low = effect - t_crit * se
     ci_high = effect + t_crit * se
 
