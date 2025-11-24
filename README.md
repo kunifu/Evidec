@@ -1,94 +1,48 @@
 # Evidec
 
-Python 製のエビデンスベース A/B テスト支援ライブラリ。統計検定を実行し、ルールに沿って GO/NO-GO を判定し、Markdown のエビデンスレポートを生成します。
+Python 製の A/B テスト評価ライブラリ。2 群の統計検定を行い、ルールに沿って GO / NO_GO / INCONCLUSIVE を判定し、Markdown レポートを生成します。
 
-## 動作環境
-- Python 3.10+（構造的パターンマッチ・モダンな型ヒントを使用）
-- 推奨インストーラ: [uv](https://github.com/astral-sh/uv)（pip 互換）
-
-## クイックスタート
+## インストール
 ```bash
-# 仮想環境を作成して有効化（uv はデフォルトで .venv を作成）
-uv venv
-source .venv/bin/activate
-
-# ライブラリ + 開発ツールをインストール（ruff, mypy, pytest, poethepoet）
-uv pip install -e '.[dev]'
-
-# pip を使う場合
-pip install -e '.[dev]'
+uv venv && source .venv/bin/activate
+uv pip install -e '.[dev]'   # または pip install -e '.[dev]'
 ```
 
-## 使い方
+## 最小サンプル
 ```python
 from evidec import DecisionRule, EvidenceReport, Experiment
 
-exp = Experiment(name="cta_color_test", metric="ctr", variant_names=("対照群", "実験群"))
-result = exp.fit(control_data, treatment_data)  # 0/1 または連続値の配列・リストなど（例: 対照群/実験群）
-
+exp = Experiment(name="cta_color", metric="ctr", variant_names=("対照群", "実験群"))
+result = exp.fit(control_data, treatment_data)  # 0/1 配列・連続値・(success, total) に対応
 rule = DecisionRule(alpha=0.05, min_lift=0.01, metric_goal="increase")
 decision = rule.judge(result)
-
 report = EvidenceReport.from_result(exp, rule, decision, result)
 print(report.markdown)
 ```
 
-同梱のサンプルを実行する場合:
-```bash
-python examples/basic_ab.py
-```
+サンプル実行: `python examples/basic_ab.py`
 
-## スコープ (MVP)
-- 2群の比率 z 検定・平均差 t 検定（独立サンプル）
-- p 値と最小リフトで GO / NO_GO / INCONCLUSIVE を判定する DecisionRule
-- Markdown 形式の Evidence Report 生成（日本語）
-- Python API のみ（CLI / GUI は未提供）
+## 提供するもの
+- 比率 z 検定 / 平均差 t 検定（指標タイプに応じて自動選択）
+- `DecisionRule` による p 値・リフト・方向性 (`metric_goal`)・最小効果量による判定
+- 日本語 Markdown の Evidence Report
 
-## スコープ外 (MVP)
-- データクリーニング / 前処理、EDA、高度な因果推論、ダッシュボード
-- サンプルサイズ・検出力・MDE 計算
-- ベイズ手法、マルチアームバンディット
+## 開発コマンド
+- `poe lint` / `poe format` / `poe typecheck` / `poe test` / `poe check`（推奨）
 
-## 開発用タスク (poethepoet)
-- `poe lint`      – ruff check
-- `poe format`    – ruff format
-- `poe typecheck` – mypy evidec
-- `poe test`      – pytest -q
-- `poe check`     – lint + typecheck + test
-
-## プロジェクト構成
+## ディレクトリ概要
 ```
 evidec/
-  __init__.py
-  core.py              # Public API Facade
-  experiment/
-    experiment.py       # Experiment クラス
-    result.py          # StatResult クラス
-  decision/
-    rule.py            # DecisionRule, Decision クラス
-  report/
-    schema.py          # EvidenceReport クラス
-    renderer.py        # Markdown レンダリング
-    formatters.py     # 数値・文字列フォーマッタ
-  stats/
-    ztest.py
-    ttest.py
-examples/
-  basic_ab.py
-tests/
-  arch/                # アーキテクチャテスト（設計原則の自動検証）
+  core.py          # 公開 API
+  experiment/      # Experiment, StatResult
+  decision/        # DecisionRule, Decision
+  report/          # EvidenceReport + renderer
+  stats/           # ztest, ttest
+tests/             # ユニット & アーキテクチャテスト
+examples/          # basic_ab.py
 ```
 
-## 設計思想
-
-このライブラリは以下の設計原則に基づいて構築されています：
-
-1. **Facade パターン**: 公開 API は `evidec/core.py` に一本化され、内部実装の詳細は隠蔽されています
-2. **責務分離**: 各モジュール（experiment, decision, report, stats）は明確な責務を持ち、独立して動作します
-3. **依存関係の制約**: モジュール間の依存関係は明確に定義され、循環依存は禁止されています
-4. **テスト容易性**: 設計原則は `tests/arch/` 配下のアーキテクチャテストで自動検証され、将来の変更でも維持されます
-
-詳細は `AGENTS.md` を参照してください。
+詳細と開発方針は `AGENTS.md` を参照してください。
 
 ## ライセンス
-MIT License（LICENSE を参照）。
+MIT License。
