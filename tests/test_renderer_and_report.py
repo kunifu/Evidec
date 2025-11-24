@@ -1,6 +1,4 @@
-from evidec.core.decision_rule import Decision, DecisionRule, NonInferiorityRule
-from evidec.core.experiment import Experiment
-from evidec.core.report import EvidenceReport
+from evidec.core import Decision, DecisionRule, EvidenceReport, Experiment, NonInferiorityRule
 from evidec.report.renderer import render_markdown
 
 

@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from evidec.stats import ztest_proportions
-from evidec.stats.ztest import _count_success_total
+from evidec.stats.ztest import _normalize_counts, _preprocess
 
 
 @pytest.mark.parametrize(
@@ -19,7 +19,7 @@ def test_成功数タプルが不正なら例外を投げる(data):
 
     # Act & Assert
     with pytest.raises(ValueError):
-        _count_success_total(invalid)
+        _preprocess(invalid)
 
 
 @pytest.mark.parametrize(
@@ -38,7 +38,7 @@ def test_配列入力が不正なら例外を投げる(data, expected):
 
     # Act & Assert
     with pytest.raises(expected):
-        _count_success_total(invalid)
+        _preprocess(invalid)
 
 
 def test_bool配列を成功数に変換できる():
@@ -46,7 +46,7 @@ def test_bool配列を成功数に変換できる():
     raw = np.array([True, False, True, True])
 
     # Act
-    successes, total = _count_success_total(raw)
+    successes, total = _preprocess(raw)
 
     # Assert
     assert successes == 3
@@ -91,3 +91,25 @@ def test_分散ゼロやSEゼロならエラーになる():
 
     with pytest.raises(ValueError):
         ztest_proportions(all_one, None, all_zero, None)
+
+
+def test_total指定時successが非整数ならTypeError():
+    # _normalize_counts の total 指定分岐をカバー
+    with pytest.raises(TypeError):
+        _normalize_counts([1, 0, 1], 10, "control")
+
+
+def test_totalなしでsuccessが整数ならTypeError():
+    # _normalize_counts の total 未指定分岐をカバー
+    with pytest.raises(TypeError):
+        _normalize_counts(5, None, "control")
+
+
+def test_control_totalなしで整数を渡すとTypeError():
+    with pytest.raises(TypeError):
+        ztest_proportions(1, None, [1, 0], None)
+
+
+def test_treatment_totalなしで整数を渡すとTypeError():
+    with pytest.raises(TypeError):
+        ztest_proportions((1, 2), None, 1, None)

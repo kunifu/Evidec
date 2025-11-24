@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from evidec.core.experiment import Experiment
+from evidec.core import Experiment
 
 
 def test_比率データを検出してz検定を選ぶ():

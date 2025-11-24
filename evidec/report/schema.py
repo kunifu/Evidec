@@ -5,14 +5,17 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from evidec.core.formatters import _fmt_ci, _fmt_numeric, _fmt_p
-from evidec.core.rule_utils import RuleDisplayContext, describe_rule_threshold, is_ratio_metric
+from evidec.decision.rule_utils import RuleDisplayContext, describe_rule_threshold, is_ratio_metric
 from evidec.report.renderer import render_markdown
+from evidec.utils.formatting import _fmt_ci, _fmt_numeric, _fmt_p
 
 if TYPE_CHECKING:  # pragma: no cover
     from evidec.bayes.beta_binomial import BayesResult
-    from evidec.core.decision_rule import Decision
-    from evidec.core.experiment import Experiment, StatResult
+    from evidec.decision.rule import Decision
+    from evidec.experiment.experiment import Experiment
+    from evidec.experiment.result import StatResult
+
+__all__ = ["EvidenceReport"]
 
 
 @dataclass(frozen=True)
@@ -73,6 +76,3 @@ class EvidenceReport:
             markdown=markdown,
             bayes_result=bayes_result,
         )
-
-
-__all__ = ["EvidenceReport"]

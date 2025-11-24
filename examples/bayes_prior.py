@@ -4,12 +4,8 @@ from __future__ import annotations
 
 import numpy as np
 
-from evidec import (
-    BayesDecisionRule,
-    EvidenceReport,
-    Experiment,
-    fit_beta_binomial_from_prior,
-)
+from evidec import EvidenceReport, Experiment
+from evidec.bayes import BayesDecisionRule, fit_beta_binomial_from_prior
 
 
 def main() -> None:
