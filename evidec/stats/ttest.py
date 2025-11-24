@@ -16,7 +16,7 @@ from scipy import stats
 NDArrayFloat: TypeAlias = NDArray[np.float64]
 
 
-def _preprocess_samples(data: Iterable[float] | NDArrayFloat) -> NDArrayFloat:
+def _preprocess(data: Iterable[float] | NDArrayFloat) -> NDArrayFloat:
     """入力データをt検定用に前処理する。
 
     処理内容:
@@ -33,7 +33,7 @@ def _preprocess_samples(data: Iterable[float] | NDArrayFloat) -> NDArrayFloat:
     return array
 
 
-def _validate_statistics(var1: float, var2: float, equal_var: bool) -> None:
+def _validate_assumptions(var1: float, var2: float, equal_var: bool) -> None:
     """統計量の前提条件を検証する。
 
     Args:
@@ -46,8 +46,8 @@ def _validate_statistics(var1: float, var2: float, equal_var: bool) -> None:
         raise ValueError("標準誤差が 0 です。入力にばらつきがありません")
 
 
-def _validate_standard_error(se: float) -> None:
-    """計算された標準誤差(SE)を検証する。"""
+def _validate_postcalc(se: float) -> None:
+    """計算後の統計量がt検定として成立しているかを検証する。"""
     if se == 0:
         raise ValueError("標準誤差が 0 です。入力にばらつきがありません")
 
@@ -75,8 +75,8 @@ def ttest_means(
         effect = treatment - control（実験群 - 対照群）
     """
     # 1. 前処理 (Preprocessing)
-    control = _preprocess_samples(control_samples)
-    treatment = _preprocess_samples(treatment_samples)
+    control = _preprocess(control_samples)
+    treatment = _preprocess(treatment_samples)
 
     # 2. 基本統計量の計算 (Basic Statistics)
     n1, n2 = control.size, treatment.size
@@ -89,7 +89,7 @@ def ttest_means(
     var2 = float(treatment.var(ddof=1))
 
     # 3. 前提条件の検証 (Assumption Validation)
-    _validate_statistics(var1, var2, equal_var)
+    _validate_assumptions(var1, var2, equal_var)
 
     # 4. 検定統計量の計算 (Test Statistics Calculation)
     # p値はscipyに任せる（scipyも内部でWelch/Studentを切り替えている）
@@ -104,7 +104,7 @@ def ttest_means(
         se = np.sqrt(var1 / n1 + var2 / n2)
 
     # 5. 事後検証 (Post-calculation Validation)
-    _validate_standard_error(se)
+    _validate_postcalc(se)
 
     # 6. 信頼区間の計算 (Confidence Interval)
     # 95%信頼区間の臨界値（両側5%、上側2.5%点）
