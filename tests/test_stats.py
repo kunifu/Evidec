@@ -69,3 +69,33 @@ def test_t検定はequal_var指定でも実行される():
     # Assert
     assert effect == pytest.approx(3.0)
     assert 0 < p_value < 0.05
+
+
+def test_t検定は分散ゼロなら例外を投げる():
+    # Arrange
+    control = [1.0, 1.0, 1.0]
+    treatment = [2.0, 2.0, 2.0]
+
+    # Act & Assert
+    with pytest.raises(ValueError, match="標準誤差が 0 です"):
+        ttest_means(control, treatment)
+
+
+def test_t検定はequal_varで分散ゼロなら例外を投げる():
+    # Arrange
+    control = [1.0, 1.0, 1.0]
+    treatment = [2.0, 2.0, 2.0]
+
+    # Act & Assert
+    with pytest.raises(ValueError, match="標準誤差が 0 です"):
+        ttest_means(control, treatment, equal_var=True)
+
+
+def test_t検定は無限大を含むと例外を投げる():
+    # Arrange
+    control = [1.0, np.inf]
+    treatment = [3.0, np.inf]
+
+    # Act & Assert
+    with pytest.raises(ValueError, match="NaN と無限大を除去した後も"):
+        ttest_means(control, treatment)

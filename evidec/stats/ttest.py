@@ -16,13 +16,40 @@ from scipy import stats
 NDArrayFloat: TypeAlias = NDArray[np.float64]
 
 
-def _to_array(data: Iterable[float] | NDArrayFloat) -> NDArrayFloat:
-    """入力データをNumPy配列に変換し、NaNを除去する。"""
+def _preprocess_samples(data: Iterable[float] | NDArrayFloat) -> NDArrayFloat:
+    """入力データをt検定用に前処理する。
+
+    処理内容:
+    1. NumPy配列への変換
+    2. NaNおよび無限大(inf)の除去
+    3. サンプルサイズ要件の確認 (n >= 2)
+    """
     array: NDArrayFloat = np.asarray(data, dtype=float)
-    array = array[~np.isnan(array)]
+    # NaNと無限大を除去
+    array = array[~np.isnan(array) & ~np.isinf(array)]
+
     if array.size < 2:
-        raise ValueError("NaN を除去した後も各サンプルに 2 件以上のデータが必要です")
+        raise ValueError("NaN と無限大を除去した後も各サンプルに 2 件以上のデータが必要です")
     return array
+
+
+def _validate_statistics(var1: float, var2: float, equal_var: bool) -> None:
+    """統計量の前提条件を検証する。
+
+    Args:
+        var1: 対照群の不偏分散
+        var2: 実験群の不偏分散
+        equal_var: 等分散を仮定するかどうか
+    """
+    # Welch's t-testの場合、両方の分散が0だと自由度計算でゼロ除算が発生する
+    if not equal_var and var1 == 0 and var2 == 0:
+        raise ValueError("標準誤差が 0 です。入力にばらつきがありません")
+
+
+def _validate_standard_error(se: float) -> None:
+    """計算された標準誤差(SE)を検証する。"""
+    if se == 0:
+        raise ValueError("標準誤差が 0 です。入力にばらつきがありません")
 
 
 def _welch_df(var1: float, var2: float, n1: int, n2: int) -> float:
@@ -47,20 +74,26 @@ def ttest_means(
         (effect, p_value, ci_low, ci_high) のタプル
         effect = treatment - control（実験群 - 対照群）
     """
+    # 1. 前処理 (Preprocessing)
+    control = _preprocess_samples(control_samples)
+    treatment = _preprocess_samples(treatment_samples)
 
-    control = _to_array(control_samples)
-    treatment = _to_array(treatment_samples)
-
+    # 2. 基本統計量の計算 (Basic Statistics)
     n1, n2 = control.size, treatment.size
     control_mean = float(control.mean())
     treatment_mean = float(treatment.mean())
     effect = treatment_mean - control_mean
 
-    t_stat, p_value = stats.ttest_ind(treatment, control, equal_var=equal_var)
-
     # ddof=1 で不偏分散を計算（標本から母集団の分散を推定するため）
     var1 = float(control.var(ddof=1))
     var2 = float(treatment.var(ddof=1))
+
+    # 3. 前提条件の検証 (Assumption Validation)
+    _validate_statistics(var1, var2, equal_var)
+
+    # 4. 検定統計量の計算 (Test Statistics Calculation)
+    # p値はscipyに任せる（scipyも内部でWelch/Studentを切り替えている）
+    _, p_value = stats.ttest_ind(treatment, control, equal_var=equal_var)
 
     if equal_var:
         df = float(n1 + n2 - 2)
@@ -70,9 +103,12 @@ def ttest_means(
         df = _welch_df(var1, var2, n1, n2)
         se = np.sqrt(var1 / n1 + var2 / n2)
 
+    # 5. 事後検証 (Post-calculation Validation)
+    _validate_standard_error(se)
+
+    # 6. 信頼区間の計算 (Confidence Interval)
     # 95%信頼区間の臨界値（両側5%、上側2.5%点）
     t_crit = stats.t.ppf(0.975, df)
-    # 効果量 ± t臨界値 × 標準誤差 で95%信頼区間を計算
     ci_low = effect - t_crit * se
     ci_high = effect + t_crit * se
 
