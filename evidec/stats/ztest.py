@@ -7,8 +7,9 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Iterable
-from typing import cast
+from typing import cast, overload
 
 import numpy as np
 from scipy import stats
@@ -19,14 +20,19 @@ def _is_sequence_of_length_two(data: object) -> bool:
     return isinstance(data, list | tuple) and len(data) == 2
 
 
-def _count_success_total(data: Iterable[float] | tuple[int, int]) -> tuple[int, int]:
+def _preprocess(data: Iterable[float] | tuple[int, int]) -> tuple[int, int]:
     """入力を(成功数, 総数)の形式に正規化する。
 
     以下の形式を受け付ける:
     - (成功数, 総数)のタプル/リスト
     - 0/1値またはbool値の配列
-    """
 
+    処理内容:
+    1. 入力形式の判定と変換
+    2. NaNの除去
+    3. データ型と値の妥当性チェック
+    4. 成功数と総数の計算
+    """
     if _is_sequence_of_length_two(data):
         success, total = cast(tuple[int | np.integer, int | np.integer], data)
         if not isinstance(success, int | np.integer) or not isinstance(total, int | np.integer):
@@ -56,10 +62,179 @@ def _count_success_total(data: Iterable[float] | tuple[int, int]) -> tuple[int, 
     return success_count, total_count
 
 
+def _validate_assumptions(c_total: int, t_total: int, pooled_var: float) -> None:
+    """z検定の前提条件を検証する。
+
+    サンプルサイズとプールした分散の妥当性を確認する。
+    """
+    if c_total <= 0 or t_total <= 0:
+        raise ValueError("総数は正の値である必要があります")
+    if pooled_var <= 0:
+        raise ValueError("プールした分散が 0 です。入力データを確認してください")
+
+
+def _ensure_nonzero_standard_error(se: float) -> None:
+    """標準誤差が 0 でないことを検証する。
+
+    ばらつきのない入力では信頼区間や検定統計量が定義できないため。
+    """
+    if se == 0:
+        raise ValueError("標準誤差が 0 です。入力にばらつきがありません")
+
+
+def _compute_pooled_variance(
+    c_success: int, c_total: int, t_success: int, t_total: int
+) -> float:
+    """プールした分散を計算する。"""
+    pooled = (c_success + t_success) / (c_total + t_total)
+    return pooled * (1 - pooled) * (1 / c_total + 1 / t_total)
+
+
+def _compute_basic_stats(
+    c_success: int, c_total: int, t_success: int, t_total: int
+) -> tuple[float, float]:
+    """比率差と標準誤差を計算する。"""
+    control_rate = c_success / c_total
+    treatment_rate = t_success / t_total
+    effect = treatment_rate - control_rate
+    se_diff = np.sqrt(
+        control_rate * (1 - control_rate) / c_total
+        + treatment_rate * (1 - treatment_rate) / t_total
+    )
+    return effect, se_diff
+
+
+def _compute_confidence_interval(effect: float, se_diff: float) -> tuple[float, float]:
+    """95%信頼区間を計算する。"""
+    z_crit = stats.norm.ppf(0.975)
+    ci_low = effect - z_crit * se_diff
+    ci_high = effect + z_crit * se_diff
+    return float(ci_low), float(ci_high)
+
+
+def _apply_agresti_caffo_correction(
+    c_success: int, c_total: int, t_success: int, t_total: int
+) -> tuple[int, int, int, int]:
+    """小標本に対してAgresti-Caffo補正を適用する。
+
+    小標本の判定基準:
+    - 最小サンプルサイズ < 30 または
+    - 最小セル数 < 5
+
+    補正内容: 各群に成功1・失敗1を加算
+    """
+    min_cells = min(c_success, t_success, c_total - c_success, t_total - t_success)
+    small_sample = min(c_total, t_total) < 30 or min_cells < 5
+
+    if small_sample:
+        return c_success + 1, c_total + 2, t_success + 1, t_total + 2
+    return c_success, c_total, t_success, t_total
+
+
+@overload
+def _normalize_counts(
+    success: Iterable[float] | tuple[int, int], total: None, role: str
+) -> tuple[int, int]:
+    ...
+
+
+@overload
+def _normalize_counts(
+    success: int | np.integer, total: int, role: str
+) -> tuple[int, int]:
+    ...
+
+
+def _normalize_counts(
+    success: Iterable[float] | tuple[int, int] | int | np.integer,
+    total: int | None,
+    role: str,
+) -> tuple[int, int]:
+    """成功数と総数の入力を検証し、(成功数, 総数)に正規化する。"""
+
+    if total is not None:
+        if not isinstance(success, int | np.integer):
+            raise TypeError(
+                f"{role}_total を指定する場合、{role}_success は整数で指定してください"
+            )
+        return int(success), int(total)
+
+    if isinstance(success, (int, np.integer)):
+        raise TypeError(
+            f"{role}_total がない場合、"
+            f"{role}_success には配列または(成功数, 総数)を指定してください"
+        )
+
+    normalized = _preprocess(cast(Iterable[float] | tuple[int, int], success))
+    return normalized
+
+
+def _normalize_group_input(
+    success: Iterable[float] | tuple[int, int] | int | np.integer | None,
+    total: int | None,
+    role: str,
+) -> tuple[int, int]:
+    """群ごとの入力を共通のバリデーション/正規化フローで処理する。"""
+
+    if success is None:  # pragma: no cover - public API で防衛的に保持
+        raise ValueError(f"{role}_success を指定してください")
+
+    if total is None:
+        return _normalize_counts(cast(Iterable[float] | tuple[int, int], success), None, role)
+
+    return _normalize_counts(cast(int | np.integer, success), total, role)
+
+
+def _compute_z_score(
+    effect: float, pooled_var: float, c_total: int, t_total: int, correction: bool
+) -> float:
+    """zスコアを計算する。"""
+
+    std_err_pool = np.sqrt(pooled_var)
+    continuity_adjustment = 0.5 * (1 / c_total + 1 / t_total) if correction else 0.0
+    sign_effect = 0.0 if effect == 0 else math.copysign(1.0, effect)
+    adjusted_effect = effect - sign_effect * continuity_adjustment if correction else effect
+    return float(adjusted_effect / std_err_pool)
+
+
+def _run_ztest(
+    control: tuple[int, int], treatment: tuple[int, int], correction: bool
+) -> tuple[float, float, float, float]:
+    """検定の主要ロジックをまとめたヘルパー。"""
+
+    c_success, c_total = control
+    t_success, t_total = treatment
+
+    # 補正前の入力がゼロ分散・不正な総数でないことを先に確認する
+    _validate_assumptions(
+        c_total, t_total, _compute_pooled_variance(c_success, c_total, t_success, t_total)
+    )
+    # 補正前に標準誤差=0（全0/全1など）を弾いておく
+    _ensure_nonzero_standard_error(
+        _compute_basic_stats(c_success, c_total, t_success, t_total)[1]
+    )
+
+    c_success, c_total, t_success, t_total = _apply_agresti_caffo_correction(
+        c_success, c_total, t_success, t_total
+    )
+
+    pooled_var = _compute_pooled_variance(c_success, c_total, t_success, t_total)
+    _validate_assumptions(c_total, t_total, pooled_var)
+
+    effect, se_diff = _compute_basic_stats(c_success, c_total, t_success, t_total)
+    _ensure_nonzero_standard_error(se_diff)
+
+    z_score = _compute_z_score(effect, pooled_var, c_total, t_total, correction)
+    p_value = 2 * (1 - stats.norm.cdf(abs(z_score)))
+    ci_low, ci_high = _compute_confidence_interval(effect, se_diff)
+
+    return float(effect), float(p_value), float(ci_low), float(ci_high)
+
+
 def ztest_proportions(
-    control_success: Iterable[float] | tuple[int, int],
+    control_success: Iterable[float] | tuple[int, int] | int | np.integer,
     control_total: int | None = None,
-    treatment_success: Iterable[float] | tuple[int, int] | None = None,
+    treatment_success: Iterable[float] | tuple[int, int] | int | np.integer | None = None,
     treatment_total: int | None = None,
     *,
     correction: bool = False,
@@ -81,92 +256,13 @@ def ztest_proportions(
         (effect, p_value, ci_low, ci_high) のタプル
         effect = treatment_rate - control_rate
     """
-
     if treatment_success is None:
         raise ValueError("treatment_success を指定してください")
 
-    # Normalise inputs
-    if control_total is not None:
-        if not isinstance(control_success, int | np.integer):
-            raise TypeError(
-                "control_total を指定する場合、control_success は整数で指定してください"
-            )
-        control_pair = (int(control_success), int(control_total))
-    else:
-        control_pair = _count_success_total(control_success)
+    control_pair = _normalize_group_input(control_success, control_total, "control")
+    treatment_pair = _normalize_group_input(treatment_success, treatment_total, "treatment")
 
-    if treatment_total is not None:
-        if not isinstance(treatment_success, int | np.integer):
-            raise TypeError(
-                "treatment_total を指定する場合、treatment_success は整数で指定してください"
-            )
-        treatment_pair = (int(treatment_success), int(treatment_total))
-    else:
-        treatment_pair = _count_success_total(treatment_success)
-
-    c_success, c_total = control_pair
-    t_success, t_total = treatment_pair
-
-    if c_total <= 0 or t_total <= 0:
-        raise ValueError("総数は正の値である必要があります")
-
-    control_rate = c_success / c_total
-    treatment_rate = t_success / t_total
-
-    pooled = (c_success + t_success) / (c_total + t_total)
-    pooled_var = pooled * (1 - pooled) * (1 / c_total + 1 / t_total)
-    if pooled_var <= 0:
-        raise ValueError("プールした分散が 0 です。入力データを確認してください")
-
-    se_diff = np.sqrt(
-        control_rate * (1 - control_rate) / c_total
-        + treatment_rate * (1 - treatment_rate) / t_total
-    )
-    if se_diff == 0:
-        raise ValueError("標準誤差が 0 です。入力にばらつきがありません")
-
-    min_cells = min(c_success, t_success, c_total - c_success, t_total - t_success)
-    small_sample = min(c_total, t_total) < 30 or min_cells < 5
-
-    if small_sample:
-        c_success_adj = c_success + 1
-        t_success_adj = t_success + 1
-        c_total_adj = c_total + 2
-        t_total_adj = t_total + 2
-    else:
-        c_success_adj = c_success
-        t_success_adj = t_success
-        c_total_adj = c_total
-        t_total_adj = t_total
-
-    control_rate_adj = c_success_adj / c_total_adj
-    treatment_rate_adj = t_success_adj / t_total_adj
-    effect_adj = treatment_rate_adj - control_rate_adj
-
-    pooled_adj = (c_success_adj + t_success_adj) / (c_total_adj + t_total_adj)
-    pooled_var_adj = pooled_adj * (1 - pooled_adj) * (1 / c_total_adj + 1 / t_total_adj)
-    if pooled_var_adj <= 0:  # pragma: no cover (防御的チェック)
-        raise ValueError("プールした分散が 0 です。入力データを確認してください")
-
-    std_err_pool = np.sqrt(pooled_var_adj)
-    continuity_adjustment = 0.5 * (1 / c_total_adj + 1 / t_total_adj) if correction else 0.0
-    adjusted_effect = (
-        effect_adj - np.sign(effect_adj) * continuity_adjustment if correction else effect_adj
-    )
-    z_score = adjusted_effect / std_err_pool
-    p_value = 2 * (1 - stats.norm.cdf(abs(z_score)))
-
-    se_diff_adj = np.sqrt(
-        control_rate_adj * (1 - control_rate_adj) / c_total_adj
-        + treatment_rate_adj * (1 - treatment_rate_adj) / t_total_adj
-    )
-    if se_diff_adj == 0:  # pragma: no cover (防御的チェック)
-        raise ValueError("標準誤差が 0 です。入力にばらつきがありません")
-    z_crit = stats.norm.ppf(0.975)
-    ci_low = effect_adj - z_crit * se_diff_adj
-    ci_high = effect_adj + z_crit * se_diff_adj
-
-    return float(effect_adj), float(p_value), float(ci_low), float(ci_high)
+    return _run_ztest(control_pair, treatment_pair, correction)
 
 
 __all__ = ["ztest_proportions"]

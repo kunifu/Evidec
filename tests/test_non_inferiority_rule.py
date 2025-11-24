@@ -1,7 +1,6 @@
 import pytest
 
-from evidec.core.decision_rule import NonInferiorityRule
-from evidec.core.experiment import StatResult
+from evidec.core import NonInferiorityRule, StatResult
 
 
 def _make_result(effect: float, ci_low: float, ci_high: float) -> StatResult:

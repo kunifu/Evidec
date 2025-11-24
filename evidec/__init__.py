@@ -3,6 +3,7 @@
 from evidec.core import (
     Decision,
     DecisionRule,
+    DecisionStatus,
     EvidenceReport,
     Experiment,
     NonInferiorityRule,
@@ -13,6 +14,7 @@ __all__ = [
     "__version__",
     "Decision",
     "DecisionRule",
+    "DecisionStatus",
     "NonInferiorityRule",
     "EvidenceReport",
     "Experiment",
