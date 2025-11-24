@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from evidec.stats import ztest_proportions
-from evidec.stats.ztest import _preprocess
+from evidec.stats.ztest import _normalize_counts, _preprocess
 
 
 @pytest.mark.parametrize(
@@ -91,3 +91,25 @@ def test_分散ゼロやSEゼロならエラーになる():
 
     with pytest.raises(ValueError):
         ztest_proportions(all_one, None, all_zero, None)
+
+
+def test_total指定時successが非整数ならTypeError():
+    # _normalize_counts の total 指定分岐をカバー
+    with pytest.raises(TypeError):
+        _normalize_counts([1, 0, 1], 10, "control")
+
+
+def test_totalなしでsuccessが整数ならTypeError():
+    # _normalize_counts の total 未指定分岐をカバー
+    with pytest.raises(TypeError):
+        _normalize_counts(5, None, "control")
+
+
+def test_control_totalなしで整数を渡すとTypeError():
+    with pytest.raises(TypeError):
+        ztest_proportions(1, None, [1, 0], None)
+
+
+def test_treatment_totalなしで整数を渡すとTypeError():
+    with pytest.raises(TypeError):
+        ztest_proportions((1, 2), None, 1, None)
