@@ -69,10 +69,6 @@ Agent がコードを変更した場合は、**可能な限り `poe check` を�
    - `stats/`: 統計検定の実装
 
 3. **依存関係の制約**
-   - `experiment` → `stats` (OK)
-   - `decision` → `experiment.result`, `report.formatters` (OK)
-   - `report.schema` → `decision.rule`, `experiment.experiment`, `experiment.result` (OK)
-   - `report.renderer` → `report.formatters` (OK)
    - 循環依存は禁止
 
 4. **モジュール構造の維持**
