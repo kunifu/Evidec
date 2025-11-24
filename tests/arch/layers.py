@@ -8,18 +8,18 @@ from pathlib import Path
 ALLOWED_DOMAIN_DEPS: dict[str, set[str]] = {
     # ルートは Facade(core) のみを再輸出
     "root": {"core"},
-    # Facade は全ドメインを束ねてよい
-    "core": {"report", "decision", "experiment", "stats", "utils"},
-    # UI 層
-    "report": {"report", "decision", "experiment", "stats", "utils"},
-    # 判定層
-    "decision": {"decision", "experiment", "stats", "utils"},
-    # 実験層
-    "experiment": {"experiment", "stats", "utils"},
-    # 統計層
-    "stats": {"stats", "utils"},
-    # 横断ユーティリティ
-    "utils": {"utils"},
+    # Facade は公開オブジェクトが属するドメインのみ束ねる
+    "core": {"report", "decision", "experiment"},
+    # UI 層: レポート生成に必要なドメインだけ
+    "report": {"decision", "experiment", "utils"},
+    # 判定層: 実験結果と共有ユーティリティに依存
+    "decision": {"experiment", "utils"},
+    # 実験層: 統計計算のみを利用
+    "experiment": {"stats"},
+    # 統計層: 他ドメインに依存しない
+    "stats": set(),
+    # 横断ユーティリティ: 自己完結
+    "utils": set(),
 }
 
 
