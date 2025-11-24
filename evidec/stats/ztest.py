@@ -19,14 +19,19 @@ def _is_sequence_of_length_two(data: object) -> bool:
     return isinstance(data, list | tuple) and len(data) == 2
 
 
-def _count_success_total(data: Iterable[float] | tuple[int, int]) -> tuple[int, int]:
+def _preprocess_proportion_data(data: Iterable[float] | tuple[int, int]) -> tuple[int, int]:
     """入力を(成功数, 総数)の形式に正規化する。
 
     以下の形式を受け付ける:
     - (成功数, 総数)のタプル/リスト
     - 0/1値またはbool値の配列
-    """
 
+    処理内容:
+    1. 入力形式の判定と変換
+    2. NaNの除去
+    3. データ型と値の妥当性チェック
+    4. 成功数と総数の計算
+    """
     if _is_sequence_of_length_two(data):
         success, total = cast(tuple[int | np.integer, int | np.integer], data)
         if not isinstance(success, int | np.integer) or not isinstance(total, int | np.integer):
@@ -56,6 +61,49 @@ def _count_success_total(data: Iterable[float] | tuple[int, int]) -> tuple[int, 
     return success_count, total_count
 
 
+def _validate_total_counts(c_total: int, t_total: int) -> None:
+    """総数が正の値であることを検証する。"""
+    if c_total <= 0 or t_total <= 0:
+        raise ValueError("総数は正の値である必要があります")
+
+
+def _validate_pooled_variance(pooled_var: float) -> None:
+    """プールした分散が正の値であることを検証する。
+
+    プールした分散が0以下の場合、z検定の計算ができないためエラーを投げる。
+    """
+    if pooled_var <= 0:
+        raise ValueError("プールした分散が 0 です。入力データを確認してください")
+
+
+def _validate_standard_error(se: float) -> None:
+    """標準誤差が0でないことを検証する。
+
+    標準誤差が0の場合、信頼区間の計算ができないためエラーを投げる。
+    """
+    if se == 0:
+        raise ValueError("標準誤差が 0 です。入力にばらつきがありません")
+
+
+def _apply_agresti_caffo_correction(
+    c_success: int, c_total: int, t_success: int, t_total: int
+) -> tuple[int, int, int, int]:
+    """小標本に対してAgresti-Caffo補正を適用する。
+
+    小標本の判定基準:
+    - 最小サンプルサイズ < 30 または
+    - 最小セル数 < 5
+
+    補正内容: 各群に成功1・失敗1を加算
+    """
+    min_cells = min(c_success, t_success, c_total - c_success, t_total - t_success)
+    small_sample = min(c_total, t_total) < 30 or min_cells < 5
+
+    if small_sample:
+        return c_success + 1, c_total + 2, t_success + 1, t_total + 2
+    return c_success, c_total, t_success, t_total
+
+
 def ztest_proportions(
     control_success: Iterable[float] | tuple[int, int],
     control_total: int | None = None,
@@ -81,11 +129,10 @@ def ztest_proportions(
         (effect, p_value, ci_low, ci_high) のタプル
         effect = treatment_rate - control_rate
     """
-
     if treatment_success is None:
         raise ValueError("treatment_success を指定してください")
 
-    # Normalise inputs
+    # 1. 前処理 (Preprocessing)
     if control_total is not None:
         if not isinstance(control_success, int | np.integer):
             raise TypeError(
@@ -93,7 +140,7 @@ def ztest_proportions(
             )
         control_pair = (int(control_success), int(control_total))
     else:
-        control_pair = _count_success_total(control_success)
+        control_pair = _preprocess_proportion_data(control_success)
 
     if treatment_total is not None:
         if not isinstance(treatment_success, int | np.integer):
@@ -102,52 +149,43 @@ def ztest_proportions(
             )
         treatment_pair = (int(treatment_success), int(treatment_total))
     else:
-        treatment_pair = _count_success_total(treatment_success)
+        treatment_pair = _preprocess_proportion_data(treatment_success)
 
     c_success, c_total = control_pair
     t_success, t_total = treatment_pair
 
-    if c_total <= 0 or t_total <= 0:
-        raise ValueError("総数は正の値である必要があります")
+    # 2. 前提条件の検証 (Assumption Validation)
+    _validate_total_counts(c_total, t_total)
 
+    # 3. 基本統計量の計算 (Basic Statistics)
     control_rate = c_success / c_total
     treatment_rate = t_success / t_total
 
     pooled = (c_success + t_success) / (c_total + t_total)
     pooled_var = pooled * (1 - pooled) * (1 / c_total + 1 / t_total)
-    if pooled_var <= 0:
-        raise ValueError("プールした分散が 0 です。入力データを確認してください")
+    _validate_pooled_variance(pooled_var)
 
     se_diff = np.sqrt(
         control_rate * (1 - control_rate) / c_total
         + treatment_rate * (1 - treatment_rate) / t_total
     )
-    if se_diff == 0:
-        raise ValueError("標準誤差が 0 です。入力にばらつきがありません")
+    _validate_standard_error(se_diff)
 
-    min_cells = min(c_success, t_success, c_total - c_success, t_total - t_success)
-    small_sample = min(c_total, t_total) < 30 or min_cells < 5
+    # 4. Agresti-Caffo補正の適用 (Small Sample Correction)
+    c_success_adj, c_total_adj, t_success_adj, t_total_adj = _apply_agresti_caffo_correction(
+        c_success, c_total, t_success, t_total
+    )
 
-    if small_sample:
-        c_success_adj = c_success + 1
-        t_success_adj = t_success + 1
-        c_total_adj = c_total + 2
-        t_total_adj = t_total + 2
-    else:
-        c_success_adj = c_success
-        t_success_adj = t_success
-        c_total_adj = c_total
-        t_total_adj = t_total
-
+    # 5. 補正後の統計量の計算 (Adjusted Statistics)
     control_rate_adj = c_success_adj / c_total_adj
     treatment_rate_adj = t_success_adj / t_total_adj
     effect_adj = treatment_rate_adj - control_rate_adj
 
     pooled_adj = (c_success_adj + t_success_adj) / (c_total_adj + t_total_adj)
     pooled_var_adj = pooled_adj * (1 - pooled_adj) * (1 / c_total_adj + 1 / t_total_adj)
-    if pooled_var_adj <= 0:  # pragma: no cover (防御的チェック)
-        raise ValueError("プールした分散が 0 です。入力データを確認してください")
+    _validate_pooled_variance(pooled_var_adj)
 
+    # 6. 検定統計量の計算 (Test Statistics Calculation)
     std_err_pool = np.sqrt(pooled_var_adj)
     continuity_adjustment = 0.5 * (1 / c_total_adj + 1 / t_total_adj) if correction else 0.0
     adjusted_effect = (
@@ -156,12 +194,13 @@ def ztest_proportions(
     z_score = adjusted_effect / std_err_pool
     p_value = 2 * (1 - stats.norm.cdf(abs(z_score)))
 
+    # 7. 信頼区間の計算 (Confidence Interval)
     se_diff_adj = np.sqrt(
         control_rate_adj * (1 - control_rate_adj) / c_total_adj
         + treatment_rate_adj * (1 - treatment_rate_adj) / t_total_adj
     )
-    if se_diff_adj == 0:  # pragma: no cover (防御的チェック)
-        raise ValueError("標準誤差が 0 です。入力にばらつきがありません")
+    _validate_standard_error(se_diff_adj)
+
     z_crit = stats.norm.ppf(0.975)
     ci_low = effect_adj - z_crit * se_diff_adj
     ci_high = effect_adj + z_crit * se_diff_adj
