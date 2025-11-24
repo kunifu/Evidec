@@ -1,4 +1,4 @@
-"""実験の実行と結果データ構造をまとめたモジュール。"""
+"""実験の実行を管理するクラス。"""
 
 from __future__ import annotations
 
@@ -9,31 +9,12 @@ from typing import Literal, TypeAlias, cast
 import numpy as np
 from numpy.typing import NDArray
 
+from evidec.experiment.result import StatResult
 from evidec.stats import ttest_means, ztest_proportions
 
 NDArrayFloat: TypeAlias = NDArray[np.float64]
 
-
-@dataclass(frozen=True)
-class StatResult:
-    effect: float
-    p_value: float
-    ci_low: float
-    ci_high: float
-    method: Literal["two-proportion z-test", "two-sample t-test"]
-    metric: str
-    baseline: float | None
-
-    def to_dict(self) -> dict[str, float | str | None]:
-        return {
-            "effect": self.effect,
-            "p_value": self.p_value,
-            "ci_low": self.ci_low,
-            "ci_high": self.ci_high,
-            "method": self.method,
-            "metric": self.metric,
-            "baseline": self.baseline,
-        }
+__all__ = ["Experiment"]
 
 
 @dataclass(frozen=True)
@@ -147,6 +128,3 @@ class Experiment:
             "method": res.method,
             "baseline": res.baseline,
         }
-
-
-__all__ = ["Experiment", "StatResult"]

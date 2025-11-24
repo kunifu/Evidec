@@ -35,23 +35,51 @@ Agent がコードを変更した場合は、**可能な限り `poe check` を�
 
 ---
 
-## 3. ディレクトリ構成（要点）
+## 3. ディレクトリ構成と設計原則
+
+### 3.1 ディレクトリ構成（要点）
 - `evidec/`
-  - `core/`
-    - `experiment.py`  
-      - `Experiment`, `StatResult`
-      - 入力データから統計検定（z検定 / t検定）を実行し、`StatResult` を返す。
-    - `decision_rule.py`  
-      - `DecisionRule`, `Decision`, `DecisionStatus`
-      - 統計結果 (`StatResult`) から GO / NO_GO / INCONCLUSIVE を判定する。
-    - `report.py`  
-      - `EvidenceReport`
-      - `Experiment` + `DecisionRule` + `Decision` + `StatResult` からレポートオブジェクトと Markdown を組み立てる。
-  - `stats/`
-    - `ztest.py`: 比率指標向けの二群検定（two-proportion z-test）。
-    - `ttest.py`: 連続値指標向けの二群検定（two-sample t-test）。
+  - `core.py`: Public API Facade（すべての公開クラスを集約）
+  - `experiment/`
+    - `experiment.py`: `Experiment` クラス（実験実行）
+    - `result.py`: `StatResult` クラス（統計結果データ構造）
+  - `decision/`
+    - `rule.py`: `DecisionRule`, `Decision` クラス（判定ロジック）
   - `report/`
-    - `renderer.py`: EvidenceReport から Markdown テキストを組み立てる。
+    - `schema.py`: `EvidenceReport` クラス（レポートデータモデル）
+    - `renderer.py`: `render_markdown` 関数（Markdown レンダリング）
+    - `formatters.py`: 数値・文字列フォーマッタ関数
+  - `stats/`
+    - `ztest.py`: 比率指標向けの二群検定（two-proportion z-test）
+    - `ttest.py`: 連続値指標向けの二群検定（two-sample t-test）
+
+### 3.2 設計原則（重要）
+
+以下の設計原則は **`tests/arch/` 配下のアーキテクチャテストで自動検証** されています。
+
+1. **Facade パターン**
+   - Public API は `evidec/core.py` に一本化
+   - `evidec/__init__.py` は `evidec.core` からのみ import
+   - 内部モジュール（experiment, decision, report）は直接公開しない
+
+2. **責務分離**
+   - `experiment/`: 実験実行と結果データ構造
+   - `decision/`: 判定ルールと意思決定ロジック
+   - `report/`: レポート生成とレンダリング
+   - `stats/`: 統計検定の実装
+
+3. **依存関係の制約**
+   - `experiment` → `stats` (OK)
+   - `decision` → `experiment.result`, `report.formatters` (OK)
+   - `report.schema` → `decision.rule`, `experiment.experiment`, `experiment.result` (OK)
+   - `report.renderer` → `report.formatters` (OK)
+   - 循環依存は禁止
+
+4. **モジュール構造の維持**
+   - `evidec/core/` ディレクトリは存在しない（`core.py` ファイルのみ）
+   - 各モジュールは適切なファイル構成を維持
+
+これらの原則に違反する変更は、`poe test` 実行時にアーキテクチャテストで検出されます。
 - `examples/`
   - `basic_ab.py`: ライブラリの典型的な利用例。
 - `tests/`: `pytest` ベースのユニットテスト一式。
@@ -120,6 +148,16 @@ Agent は、このフローを壊さない形で拡張・修正を提案する�
 以下は、このリポジトリで動作する Agent が守るべきルールです。
 
 - コメントやエラーメッセージなどは基本日本語を扱うこと
+
+### 8.0 設計原則の遵守（最重要）
+
+**設計原則は `tests/arch/` 配下のアーキテクチャテストで自動検証されています。**
+
+コード変更時は以下を必ず守ること：
+- `evidec/core.py` を Facade として維持（内部モジュールを直接公開しない）
+- モジュール間の依存関係を適切に保つ（循環依存を避ける）
+- 責務ごとの分離を維持（experiment, decision, report, stats）
+- `poe test` でアーキテクチャテストが通ることを確認
 
 ### 8.1 安定性・互換性
 - 既存の公開 API:

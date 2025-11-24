@@ -5,12 +5,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from evidec.core.formatters import _fmt_ci, _fmt_numeric, _fmt_p
+from evidec.report.formatters import _fmt_ci, _fmt_numeric, _fmt_p
 from evidec.report.renderer import render_markdown
 
 if TYPE_CHECKING:  # pragma: no cover
-    from evidec.core.decision_rule import Decision, DecisionRule
-    from evidec.core.experiment import Experiment, StatResult
+    from evidec.decision.rule import Decision, DecisionRule
+    from evidec.experiment.experiment import Experiment
+    from evidec.experiment.result import StatResult
+
+__all__ = ["EvidenceReport"]
 
 
 def _is_ratio(stat_result: StatResult) -> bool:
@@ -74,5 +77,3 @@ class EvidenceReport:
             markdown=markdown,
         )
 
-
-__all__ = ["EvidenceReport"]

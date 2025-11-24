@@ -23,3 +23,4 @@ def _fmt_ci(ci_low: float, ci_high: float, as_percent: bool) -> str:
     """信頼区間をフォーマットする。"""
 
     return f"[{_fmt_numeric(ci_low, as_percent)}, {_fmt_numeric(ci_high, as_percent)}]"
+

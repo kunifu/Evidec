@@ -60,19 +60,35 @@ python examples/basic_ab.py
 ```
 evidec/
   __init__.py
-  core/
-    experiment.py
-    decision_rule.py
-    report.py
+  core.py              # Public API Facade
+  experiment/
+    experiment.py       # Experiment クラス
+    result.py          # StatResult クラス
+  decision/
+    rule.py            # DecisionRule, Decision クラス
+  report/
+    schema.py          # EvidenceReport クラス
+    renderer.py        # Markdown レンダリング
+    formatters.py     # 数値・文字列フォーマッタ
   stats/
     ztest.py
     ttest.py
-  report/
-    renderer.py
 examples/
   basic_ab.py
 tests/
+  arch/                # アーキテクチャテスト（設計原則の自動検証）
 ```
+
+## 設計思想
+
+このライブラリは以下の設計原則に基づいて構築されています：
+
+1. **Facade パターン**: 公開 API は `evidec/core.py` に一本化され、内部実装の詳細は隠蔽されています
+2. **責務分離**: 各モジュール（experiment, decision, report, stats）は明確な責務を持ち、独立して動作します
+3. **依存関係の制約**: モジュール間の依存関係は明確に定義され、循環依存は禁止されています
+4. **テスト容易性**: 設計原則は `tests/arch/` 配下のアーキテクチャテストで自動検証され、将来の変更でも維持されます
+
+詳細は `AGENTS.md` を参照してください。
 
 ## ライセンス
 MIT License（LICENSE を参照）。

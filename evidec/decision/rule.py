@@ -5,10 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from evidec.core.experiment import StatResult
-from evidec.core.formatters import _fmt_ci, _fmt_numeric, _fmt_p
+from evidec.experiment.result import StatResult
+from evidec.report.formatters import _fmt_ci, _fmt_numeric, _fmt_p
 
 DecisionStatus = Literal["GO", "NO_GO", "INCONCLUSIVE"]
+
+__all__ = ["DecisionRule", "Decision", "DecisionStatus"]
 
 
 @dataclass(frozen=True)
@@ -104,6 +106,3 @@ class DecisionRule:
             stats["min_effect_size"] = self.min_effect_size
 
         return Decision(status=status, reason=reason, stats=stats)
-
-
-__all__ = ["DecisionRule", "Decision", "DecisionStatus"]

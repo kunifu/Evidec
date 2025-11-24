@@ -1,7 +1,7 @@
 import pytest
 
-from evidec.core.decision_rule import DecisionRule, _fmt_numeric, _fmt_p
-from evidec.core.experiment import StatResult
+from evidec.core import DecisionRule, StatResult
+from evidec.report.formatters import _fmt_numeric, _fmt_p
 
 
 def make_result(effect: float, p_value: float, baseline: float = 0.2) -> StatResult:

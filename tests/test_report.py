@@ -1,8 +1,6 @@
 import numpy as np
 
-from evidec.core.decision_rule import DecisionRule
-from evidec.core.experiment import Experiment
-from evidec.core.report import EvidenceReport
+from evidec.core import DecisionRule, EvidenceReport, Experiment
 
 
 def test_レポートに主要セクションが含まれる():

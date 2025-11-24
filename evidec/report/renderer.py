@@ -4,11 +4,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from evidec.core.formatters import _fmt_numeric, _fmt_p
+from evidec.report.formatters import _fmt_numeric, _fmt_p
 
 if TYPE_CHECKING:  # pragma: no cover
-    from evidec.core.decision_rule import Decision, DecisionRule
-    from evidec.core.experiment import Experiment, StatResult
+    from evidec.decision.rule import Decision, DecisionRule
+    from evidec.experiment.experiment import Experiment
+    from evidec.experiment.result import StatResult
 
 
 def render_markdown(
