@@ -58,6 +58,7 @@ def ttest_means(
 
     t_stat, p_value = stats.ttest_ind(treatment, control, equal_var=equal_var)
 
+    # ddof=1 で不偏分散を計算（標本から母集団の分散を推定するため）
     var1 = float(control.var(ddof=1))
     var2 = float(treatment.var(ddof=1))
 
