@@ -54,7 +54,8 @@ def test_GOの場合に有意差と段階的ロールアウトを記述する():
 
     # Assert
     assert decision.status == "GO"
-    assert "有意差あり" in report.markdown
+    # p値が0.036なので参考として表示されているか確認
+    assert "p=0.03" in report.markdown
     assert "段階的ロールアウトを推奨" in report.markdown
 
 

@@ -9,7 +9,9 @@ from tests.arch.helpers import get_dunder_all, get_evidec_imports
 EXPECTED_PUBLIC_API = {
     "Experiment",
     "DecisionRule",
+    "NonInferiorityRule",
     "Decision",
+    "DecisionStatus",
     "StatResult",
     "EvidenceReport",
 }

@@ -4,10 +4,17 @@
 内部実装の詳細は隠蔽され、安定した API を保証します。
 """
 
-from evidec.decision.rule import Decision, DecisionRule
+from evidec.decision.rule import Decision, DecisionRule, DecisionStatus, NonInferiorityRule
 from evidec.experiment.experiment import Experiment
 from evidec.experiment.result import StatResult
 from evidec.report.schema import EvidenceReport
 
-__all__ = ["Experiment", "DecisionRule", "Decision", "StatResult", "EvidenceReport"]
-
+__all__ = [
+    "Experiment",
+    "DecisionRule",
+    "NonInferiorityRule",
+    "Decision",
+    "DecisionStatus",
+    "StatResult",
+    "EvidenceReport",
+]

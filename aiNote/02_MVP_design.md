@@ -75,9 +75,7 @@ evidec/
 
 ## 6. API サーフェス（想定）
 ```python
-from evidec.core.experiment import Experiment
-from evidec.core.decision_rule import DecisionRule
-from evidec.core.report import EvidenceReport
+from evidec.core import DecisionRule, EvidenceReport, Experiment
 
 exp = Experiment(
     name="cta_color_test",

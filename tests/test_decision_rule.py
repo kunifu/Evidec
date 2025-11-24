@@ -102,12 +102,28 @@ def test_min_effect_size未達なら統計情報を含むINCONCLUSIVEを返す()
 
 
 def test_formatヘルパーで数値とp値が整形される():
-    # Arrange & Act
-    p_value_formatted = _fmt_p(0.00001)
-    numeric_plain = _fmt_numeric(0.12345, as_percent=False)
-    numeric_percent = _fmt_numeric(0.12345, as_percent=True)
+    # Arrange
+    p_value = 0.00001
+    numeric_value = 0.12345
+
+    # Act
+    p_value_formatted = _fmt_p(p_value)
+    numeric_plain = _fmt_numeric(numeric_value, as_percent=False)
+    numeric_percent = _fmt_numeric(numeric_value, as_percent=True)
 
     # Assert
     assert p_value_formatted == "<0.0001"
     assert numeric_plain == "+0.123"
     assert numeric_percent == "+12.3%"
+
+
+def test_describe_thresholdで閾値文字列を返す():
+    # Arrange
+    rule = DecisionRule(alpha=0.05, min_lift=0.0123, metric_goal="increase")
+
+    # Act
+    criterion, threshold = rule.describe_threshold(ratio_metric=True)
+
+    # Assert
+    assert "最小リフト" in criterion
+    assert threshold.endswith("%")
