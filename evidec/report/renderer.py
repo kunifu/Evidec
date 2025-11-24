@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from evidec.report.formatters import _fmt_numeric, _fmt_p
+from evidec.utils.formatting import _fmt_numeric, _fmt_p
 
 if TYPE_CHECKING:  # pragma: no cover
     from evidec.decision.rule import Decision, DecisionRule

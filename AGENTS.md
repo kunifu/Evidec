@@ -11,6 +11,7 @@ Evidec は **A/B テスト結果を統計評価し、Markdown エビデンスを
 - Facade: 公開は `evidec/core.py` のみ。`evidec/__init__.py` は core から import するだけ。`evidec/core/` ディレクトリを作らない。
 - 責務分離: `experiment`(実行・結果), `decision`(判定), `report`(レポート生成), `stats`(検定)。
 - 依存: 循環禁止。
+- レイヤ依存: ドメイン間の横断は禁止。共有したいものは `utils/` に移す。許可マトリクスは `tests/arch/layers.py` を参照。
 - 互換性: 公開クラスのシグネチャ・挙動を勝手に変えない。
 
 ## 使い方フロー（最小）

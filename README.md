@@ -38,6 +38,7 @@ evidec/
   decision/        # DecisionRule, Decision
   report/          # EvidenceReport + renderer
   stats/           # ztest, ttest
+  utils/           # 共通ユーティリティ
 tests/             # ユニット & アーキテクチャテスト
 examples/          # basic_ab.py
 ```

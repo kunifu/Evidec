@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from evidec.experiment.result import StatResult
-from evidec.report.formatters import _fmt_ci, _fmt_numeric, _fmt_p
+from evidec.utils.formatting import _fmt_ci, _fmt_numeric, _fmt_p
 
 DecisionStatus = Literal["GO", "NO_GO", "INCONCLUSIVE"]
 
