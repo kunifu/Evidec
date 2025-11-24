@@ -34,7 +34,7 @@ def _preprocess(data: Iterable[float] | NDArrayFloat) -> NDArrayFloat:
 
 
 def _validate_assumptions(var1: float, var2: float, equal_var: bool) -> None:
-    """統計量の前提条件を検証する。
+    """t検定の前提条件を検証する。
 
     Args:
         var1: 対照群の不偏分散
