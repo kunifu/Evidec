@@ -1,52 +1,49 @@
-# Evidec (WIP)
+# Evidec
 
-Evidence-based A/B test helper in Python. Run statistical tests, decide GO/NO-GO via rules, and emit Markdown evidence reports.
+Python 製の A/B テスト評価ライブラリ。2 群の統計検定を行い、ルールに沿って GO / NO_GO / INCONCLUSIVE を判定し、Markdown レポートを生成します。
 
-## Requirements
-- Python 3.10+ (uses structural pattern matching and modern typing)
-- Recommended installer: [uv](https://github.com/astral-sh/uv) (pip compatible)
-
-## Quick start
+## インストール
 ```bash
-# create and activate a virtualenv (uv will create .venv by default)
-uv venv
-source .venv/bin/activate
-
-# install library + dev tools (ruff, mypy, pytest, poethepoet)
-uv pip install -e '.[dev]'
-
-# or with pip
-pip install -e '.[dev]'
+uv venv && source .venv/bin/activate
+uv pip install -e '.[dev]'   # または pip install -e '.[dev]'
 ```
 
-## Developer tasks (poethepoet)
-- `poe lint`      – ruff check
-- `poe format`    – ruff format
-- `poe typecheck` – mypy evidec
-- `poe test`      – pytest -q
-- `poe check`     – lint + typecheck + test
+## 最小サンプル
+```python
+from evidec import DecisionRule, EvidenceReport, Experiment
 
-## Project layout (planned)
+exp = Experiment(name="cta_color", metric="ctr", variant_names=("対照群", "実験群"))
+result = exp.fit(control_data, treatment_data)  # 0/1 配列・連続値・(success, total) に対応
+rule = DecisionRule(alpha=0.05, min_lift=0.01, metric_goal="increase")
+decision = rule.judge(result)
+report = EvidenceReport.from_result(exp, rule, decision, result)
+print(report.markdown)
+```
+
+サンプル実行: `python examples/basic_ab.py`
+
+## 提供するもの
+- 比率 z 検定 / 平均差 t 検定（指標タイプに応じて自動選択）
+- `DecisionRule` による p 値・リフト・方向性 (`metric_goal`)・最小効果量による判定
+- 日本語 Markdown の Evidence Report
+
+## 開発コマンド
+- `poe lint` / `poe format` / `poe typecheck` / `poe test` / `poe check`（推奨）
+
+## ディレクトリ概要
 ```
 evidec/
-  __init__.py
-  core/
-    experiment.py
-    decision_rule.py
-    report.py
-  stats/
-    ztest.py
-    ttest.py
-  report/
-    renderer.py
-examples/
-  basic_ab.py
-tests/
+  core.py          # 公開 API
+  experiment/      # Experiment, StatResult
+  decision/        # DecisionRule, Decision
+  report/          # EvidenceReport + renderer
+  stats/           # ztest, ttest
+  utils/           # 共通ユーティリティ
+tests/             # ユニット & アーキテクチャテスト
+examples/          # basic_ab.py
 ```
 
-## Status
-- Environment scaffolded (pyproject, tasks, lint/type/test config).
-- Core implementation and tests are upcoming; see `aiNote/02_MVP_design.md` for design details and task list.
+詳細と開発方針は `AGENTS.md` を参照してください。
 
-## License
-MIT License (see LICENSE).
+## ライセンス
+MIT License。
