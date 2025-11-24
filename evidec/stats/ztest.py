@@ -19,7 +19,7 @@ def _is_sequence_of_length_two(data: object) -> bool:
     return isinstance(data, list | tuple) and len(data) == 2
 
 
-def _preprocess_proportion_data(data: Iterable[float] | tuple[int, int]) -> tuple[int, int]:
+def _preprocess(data: Iterable[float] | tuple[int, int]) -> tuple[int, int]:
     """入力を(成功数, 総数)の形式に正規化する。
 
     以下の形式を受け付ける:
@@ -61,23 +61,19 @@ def _preprocess_proportion_data(data: Iterable[float] | tuple[int, int]) -> tupl
     return success_count, total_count
 
 
-def _validate_total_counts(c_total: int, t_total: int) -> None:
-    """総数が正の値であることを検証する。"""
+def _validate_assumptions(c_total: int, t_total: int, pooled_var: float) -> None:
+    """z検定の前提条件を検証する。
+
+    サンプルサイズとプールした分散の妥当性を確認する。
+    """
     if c_total <= 0 or t_total <= 0:
         raise ValueError("総数は正の値である必要があります")
-
-
-def _validate_pooled_variance(pooled_var: float) -> None:
-    """プールした分散が正の値であることを検証する。
-
-    プールした分散が0以下の場合、z検定の計算ができないためエラーを投げる。
-    """
     if pooled_var <= 0:
         raise ValueError("プールした分散が 0 です。入力データを確認してください")
 
 
-def _validate_standard_error(se: float) -> None:
-    """標準誤差が0でないことを検証する。
+def _validate_postcalc(se: float) -> None:
+    """計算後の統計量がz検定として成立しているかを検証する。
 
     標準誤差が0の場合、信頼区間の計算ができないためエラーを投げる。
     """
@@ -140,7 +136,7 @@ def ztest_proportions(
             )
         control_pair = (int(control_success), int(control_total))
     else:
-        control_pair = _preprocess_proportion_data(control_success)
+        control_pair = _preprocess(control_success)
 
     if treatment_total is not None:
         if not isinstance(treatment_success, int | np.integer):
@@ -149,43 +145,42 @@ def ztest_proportions(
             )
         treatment_pair = (int(treatment_success), int(treatment_total))
     else:
-        treatment_pair = _preprocess_proportion_data(treatment_success)
+        treatment_pair = _preprocess(treatment_success)
 
     c_success, c_total = control_pair
     t_success, t_total = treatment_pair
 
     # 2. 前提条件の検証 (Assumption Validation)
-    _validate_total_counts(c_total, t_total)
+    pooled = (c_success + t_success) / (c_total + t_total)
+    pooled_var = pooled * (1 - pooled) * (1 / c_total + 1 / t_total)
+    _validate_assumptions(c_total, t_total, pooled_var)
 
     # 3. 基本統計量の計算 (Basic Statistics)
     control_rate = c_success / c_total
     treatment_rate = t_success / t_total
 
-    pooled = (c_success + t_success) / (c_total + t_total)
-    pooled_var = pooled * (1 - pooled) * (1 / c_total + 1 / t_total)
-    _validate_pooled_variance(pooled_var)
-
     se_diff = np.sqrt(
         control_rate * (1 - control_rate) / c_total
         + treatment_rate * (1 - treatment_rate) / t_total
     )
-    _validate_standard_error(se_diff)
+    _validate_postcalc(se_diff)
 
     # 4. Agresti-Caffo補正の適用 (Small Sample Correction)
     c_success_adj, c_total_adj, t_success_adj, t_total_adj = _apply_agresti_caffo_correction(
         c_success, c_total, t_success, t_total
     )
 
-    # 5. 補正後の統計量の計算 (Adjusted Statistics)
+    # 5. 補正後の前提条件の検証 (Assumption Validation after Correction)
+    pooled_adj = (c_success_adj + t_success_adj) / (c_total_adj + t_total_adj)
+    pooled_var_adj = pooled_adj * (1 - pooled_adj) * (1 / c_total_adj + 1 / t_total_adj)
+    _validate_assumptions(c_total_adj, t_total_adj, pooled_var_adj)
+
+    # 6. 補正後の統計量の計算 (Adjusted Statistics)
     control_rate_adj = c_success_adj / c_total_adj
     treatment_rate_adj = t_success_adj / t_total_adj
     effect_adj = treatment_rate_adj - control_rate_adj
 
-    pooled_adj = (c_success_adj + t_success_adj) / (c_total_adj + t_total_adj)
-    pooled_var_adj = pooled_adj * (1 - pooled_adj) * (1 / c_total_adj + 1 / t_total_adj)
-    _validate_pooled_variance(pooled_var_adj)
-
-    # 6. 検定統計量の計算 (Test Statistics Calculation)
+    # 7. 検定統計量の計算 (Test Statistics Calculation)
     std_err_pool = np.sqrt(pooled_var_adj)
     continuity_adjustment = 0.5 * (1 / c_total_adj + 1 / t_total_adj) if correction else 0.0
     adjusted_effect = (
@@ -194,12 +189,12 @@ def ztest_proportions(
     z_score = adjusted_effect / std_err_pool
     p_value = 2 * (1 - stats.norm.cdf(abs(z_score)))
 
-    # 7. 信頼区間の計算 (Confidence Interval)
+    # 8. 信頼区間の計算 (Confidence Interval)
     se_diff_adj = np.sqrt(
         control_rate_adj * (1 - control_rate_adj) / c_total_adj
         + treatment_rate_adj * (1 - treatment_rate_adj) / t_total_adj
     )
-    _validate_standard_error(se_diff_adj)
+    _validate_postcalc(se_diff_adj)
 
     z_crit = stats.norm.ppf(0.975)
     ci_low = effect_adj - z_crit * se_diff_adj
