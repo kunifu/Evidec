@@ -29,8 +29,13 @@ def render_markdown(
     ratio = is_ratio_metric(stat_result)
 
     effect_str = _fmt_numeric(stat_result.effect, ratio)
-    ci_low_str = _fmt_numeric(stat_result.ci_low, ratio)
-    ci_high_str = _fmt_numeric(stat_result.ci_high, ratio)
+    # 信頼区間は比率指標の場合、ppで表示
+    if ratio:
+        ci_low_str = f"{stat_result.ci_low * 100:+.1f}pp"
+        ci_high_str = f"{stat_result.ci_high * 100:+.1f}pp"
+    else:
+        ci_low_str = _fmt_numeric(stat_result.ci_low, ratio)
+        ci_high_str = _fmt_numeric(stat_result.ci_high, ratio)
     baseline_str = (
         _fmt_numeric(stat_result.baseline, ratio, force_sign=False)
         if stat_result.baseline is not None
