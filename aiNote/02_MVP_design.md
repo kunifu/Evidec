@@ -21,15 +21,15 @@ evidec/
 │   ├─ experiment.py      # 入力検証・実行オーケストレーション
 │   ├─ decision_rule.py   # 判定ロジック
 │   └─ report.py          # EvidenceReport モデル
-├─ stats/
+├─ frequentist/
 │   ├─ ztest.py           # 比率検定
 │   └─ ttest.py           # 平均差 t 検定
 └─ report/
     └─ renderer.py        # Markdown 生成
 ```
-- `stats` は純計算レイヤ。`core` はドメインロジック。`report` はプレゼンテーションに限定。
-- 依存方向: `core` → `stats` / `report`。`stats` と `report` 間に依存を持たない。
-- 単体テストはレイヤ単位（`tests/stats/test_ztest.py` など）で分割。
+- `frequentist` は純計算レイヤ。`core` はドメインロジック。`report` はプレゼンテーションに限定。
+- 依存方向: `core` → `frequentist` / `report`。`frequentist` と `report` 間に依存を持たない。
+- 単体テストはレイヤ単位（`tests/test_stats.py` など）で分割。
 
 ## 4. データモデル
 - `StatResult`（dataclass）
@@ -53,15 +53,15 @@ evidec/
   - `summary`, `statistical_evidence`, `decision_rule`, `interpretation` の各セクション文字列を保持。
 
 ## 5. モジュール設計詳細
-- `stats/ztest.py`
+- `frequentist/ztest.py`
   - `ztest_proportions(control_success, control_total, treatment_success, treatment_total, correction=False)` を提供。
   - 入力は int または array-like。array の場合は success=1/0 としてカウントするユーティリティを内部に持つ。
   - 正規近似前提を明記し、サンプルが少ない場合は警告（`RuntimeWarning`）を発生させる。
-- `stats/ttest.py`
+- `frequentist/ttest.py`
   - `ttest_means(control_samples, treatment_samples, equal_var=False)` を提供。scipy.stats.ttest_ind を呼び出し、効果量を treatment - control で算出。
   - CI 計算は Welch/Student の df に応じて `stats.t.interval` を使用。
 - `core/experiment.py`
-  - 入力検証（NaN 除去、空配列チェック、型正規化）を行い、メトリック種別を選択して `stats` を呼び出す。
+- 入力検証（NaN 除去、空配列チェック、型正規化）を行い、メトリック種別を選択して `frequentist` を呼び出す。
   - `summary()` は `StatResult` を辞書化し、小数/百分率の整形を統一する。
 - `core/decision_rule.py`
   - `judge(result: StatResult) -> Decision`。`metric_goal` に基づき効果方向を評価。`p_value` と `alpha`、`min_lift` を順序立てて判定。
@@ -98,7 +98,7 @@ print(report.markdown)
 - 検定での数値不安定（極端な p値）は `RuntimeWarning` で通知しつつ値は返す。
 
 ## 8. テスト戦略
-- `stats`：scipy 既知ケースとの一致を ±1e-6 以内で検証（比率・平均双方）。
+- `frequentist`：scipy 既知ケースとの一致を ±1e-6 以内で検証（比率・平均双方）。
 - `decision_rule`：p値境界、lift 境界、効果逆転、非有意の4系統で表形式テスト。
 - `report`：レンダリング結果に GO/NO_GO/INCONCLUSIVE の各文言と主要数値が含まれることをスナップショットテスト。
 - `examples/basic_ab.py`：最小実行例。pytest で smoke テストとしても実行。

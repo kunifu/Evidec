@@ -9,15 +9,13 @@ ALLOWED_DOMAIN_DEPS: dict[str, set[str]] = {
     # ルートは Facade(core) のみを再輸出
     "root": {"core"},
     # Facade は公開オブジェクトが属するドメインのみ束ねる
-    "core": {"report", "decision", "experiment"},
-    # UI 層: レポート生成に必要なドメインだけ
-    "report": {"decision", "experiment", "utils"},
-    # 判定層: 実験結果と共有ユーティリティに依存
-    "decision": {"experiment", "utils"},
-    # 実験層: 統計計算のみを利用
-    "experiment": {"stats"},
-    # 統計層: 他ドメインに依存しない
-    "stats": set(),
+    "core": {"report", "frequentist", "utils"},
+    # ベイズ拡張はコア判定ロジックに依存
+    "bayesian": {"core"},
+    # プレゼンテーション層: レポート生成に必要なドメインだけ
+    "report": {"core", "utils"},
+    # 統計層(頻度論): 他ドメインに依存しない
+    "frequentist": set(),
     # 横断ユーティリティ: 自己完結
     "utils": set(),
 }

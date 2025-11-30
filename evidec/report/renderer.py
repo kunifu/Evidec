@@ -4,17 +4,22 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from evidec.decision.rule_utils import RuleDisplayContext, describe_rule_threshold, is_ratio_metric
+from evidec.core.rule_utils import RuleDisplayContext, describe_rule_threshold, is_ratio_metric
 from evidec.utils.formatting import _fmt_numeric, _fmt_p
 
 if TYPE_CHECKING:  # pragma: no cover
-    from evidec.decision.rule import Decision
-    from evidec.experiment.experiment import Experiment
-    from evidec.experiment.result import StatResult
+    from evidec.bayesian.beta_binomial import BayesResult
+    from evidec.core.decision_rule import Decision
+    from evidec.core.experiment import Experiment
+    from evidec.core.result import StatResult
 
 
 def render_markdown(
-    experiment: Experiment, decision: Decision, stat_result: StatResult, rule: RuleDisplayContext
+    experiment: Experiment,
+    decision: Decision,
+    stat_result: StatResult,
+    rule: RuleDisplayContext,
+    bayes_result: BayesResult | None = None,
 ) -> str:
     """実験結果を構造化されたMarkdownレポートに整形する。
 
@@ -95,6 +100,25 @@ def render_markdown(
         "> - 信頼区間が0を含まない場合、効果の方向性は確実です。",
         "> - p値は「差が偶然生じる確率」を表します。基準値(α)より小さい場合に有意とみなします。",
     ]
+
+    if bayes_result is not None:
+        lines.extend(
+            [
+                "",
+                "## Bayesian Evidence (Beta-Binomial)",
+                f"- **改善確率 (P(Δ>0))**: {bayes_result.p_improve:.1%}",
+                (
+                    "- **非劣性確率 ("
+                    f"P(Δ>{bayes_result.tolerance:+.1%}))**: {bayes_result.p_above_tol:.1%}"
+                ),
+                (
+                    "- **推定リフト**: "
+                    f"{bayes_result.lift_mean:+.2%} "
+                    f"(95% CI: {bayes_result.lift_ci[0]:+.2%} ~ "
+                    f"{bayes_result.lift_ci[1]:+.2%})"
+                ),
+            ]
+        )
 
     return "\n".join(lines)
 

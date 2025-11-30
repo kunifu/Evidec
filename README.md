@@ -53,12 +53,11 @@ python examples/non_inferiority.py
 ## ディレクトリ概要
 ```
 evidec/
-  core.py          # 公開 API
-  experiment/      # Experiment, StatResult
-  decision/        # DecisionRule, Decision
-  report/          # EvidenceReport + renderer
-  stats/           # ztest, ttest
+  core/            # Experiment, DecisionRule, EvidenceReport を束ねるドメインロジック
+  report/          # renderer (Markdown組み立て)
+  frequentist/     # ztest, ttest（頻度論）
   utils/           # 共通ユーティリティ
+  bayesian/        # Beta-Binomial など拡張
 tests/             # ユニット & アーキテクチャテスト
 examples/          # basic_ab.py
 ```

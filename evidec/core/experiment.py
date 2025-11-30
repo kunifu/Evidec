@@ -9,8 +9,8 @@ from typing import Literal, TypeAlias, cast
 import numpy as np
 from numpy.typing import NDArray
 
-from evidec.experiment.result import StatResult
-from evidec.stats import ttest_means, ztest_proportions
+from evidec.core.result import StatResult
+from evidec.frequentist import ttest_means, ztest_proportions
 
 NDArrayFloat: TypeAlias = NDArray[np.float64]
 

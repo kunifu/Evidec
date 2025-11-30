@@ -20,12 +20,12 @@ ALLOWED_ROOT_ONLY = {"__version__"}
 
 class TestPublicAPI:
     def test_PublicAPIがFacade集合と一致する(self) -> None:
-        core_exports = set(get_dunder_all(Path("evidec/core.py")))
+        core_exports = set(get_dunder_all(Path("evidec/core/__init__.py")))
         root_exports = set(get_dunder_all(Path("evidec/__init__.py")))
 
         assert (
             core_exports == EXPECTED_PUBLIC_API
-        ), f"evidec/core.py の公開シンボルが想定外: {core_exports}"
+        ), f"evidec/core/__init__.py の公開シンボルが想定外: {core_exports}"
         assert (
             root_exports == EXPECTED_PUBLIC_API | ALLOWED_ROOT_ONLY
         ), f"evidec/__init__.py の公開シンボルが想定外: {root_exports}"
