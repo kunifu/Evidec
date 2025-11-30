@@ -24,7 +24,7 @@
 - `Experiment`
   - 入力: `name`, `metric`, `variant_names`, `control_data`, `treatment_data`（array-like または pandas Series）
   - メソッド: `fit(control, treatment)`, `summary()`
-- 検定モジュール `stats/`
+- 検定モジュール `frequentist/`
   - `ztest_proportions(control_success, control_total, treatment_success, treatment_total)` → `effect`, `p_value`, `ci_low`, `ci_high`, `method="two-proportion z-test"`
   - `ttest_means(control_samples, treatment_samples, equal_var=False)` → `effect`, `p_value`, `ci_low`, `ci_high`, `method="two-sample t-test"`
 - `DecisionRule`
@@ -52,8 +52,8 @@
 - `evidec/core/experiment.py`
 - `evidec/core/decision_rule.py`
 - `evidec/core/report.py`
-- `evidec/stats/ztest.py`
-- `evidec/stats/ttest.py`
+- `evidec/frequentist/ztest.py`
+- `evidec/frequentist/ttest.py`
 - `evidec/report/renderer.py`
 - `examples/basic_ab.py`
 - `tests/` 配下に各モジュールのテスト。

@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from evidec.stats import ztest_proportions
-from evidec.stats.ztest import _normalize_counts, _preprocess
+from evidec.frequentist import ztest_proportions
+from evidec.frequentist.ztest import _normalize_counts, _preprocess
 
 
 @pytest.mark.parametrize(

@@ -5,8 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal, Protocol
 
-from evidec.decision.rule_utils import is_ratio_metric
-from evidec.experiment.result import StatResult
+from evidec.core.result import StatResult
+from evidec.core.rule_utils import is_ratio_metric
 from evidec.utils.formatting import _fmt_ci, _fmt_numeric, _fmt_p
 
 DecisionStatus = Literal["GO", "NO_GO", "INCONCLUSIVE"]

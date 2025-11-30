@@ -8,7 +8,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Literal, Protocol
 
-from evidec.experiment.result import StatResult
+from evidec.core.result import StatResult
 from evidec.utils.formatting import _fmt_numeric
 
 __all__ = ["RuleDisplayContext", "describe_rule_threshold", "is_ratio_metric"]

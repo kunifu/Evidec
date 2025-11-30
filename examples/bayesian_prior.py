@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 
 from evidec import EvidenceReport, Experiment
-from evidec.bayes import BayesDecisionRule, fit_beta_binomial_from_prior
+from evidec.bayesian import BayesDecisionRule, fit_beta_binomial_from_prior
 
 
 def main() -> None:

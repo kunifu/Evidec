@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from evidec.bayes.beta_binomial import (
+from evidec.bayesian.beta_binomial import (
     BayesResult,
     fit_beta_binomial,
     fit_beta_binomial_from_prior,

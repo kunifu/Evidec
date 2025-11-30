@@ -5,8 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from evidec.bayes.beta_binomial import BayesResult
-from evidec.decision.rule import Decision, DecisionStatus
+from evidec.bayesian.beta_binomial import BayesResult
+from evidec.core.decision_rule import Decision, DecisionStatus
 
 __all__ = ["BayesDecisionRule"]
 

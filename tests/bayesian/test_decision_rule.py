@@ -1,5 +1,5 @@
-from evidec.bayes.beta_binomial import BayesResult
-from evidec.bayes.decision_rule import BayesDecisionRule
+from evidec.bayesian.beta_binomial import BayesResult
+from evidec.bayesian.decision_rule import BayesDecisionRule
 
 
 def _result(**kwargs: float) -> BayesResult:

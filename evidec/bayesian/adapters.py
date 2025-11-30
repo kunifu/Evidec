@@ -7,7 +7,7 @@ from typing import Any, cast
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-from evidec.bayes.beta_binomial import BayesResult, fit_beta_binomial
+from evidec.bayesian.beta_binomial import BayesResult, fit_beta_binomial
 
 __all__ = ["fit_beta_binomial_from_arrays"]
 

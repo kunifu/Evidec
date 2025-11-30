@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from evidec.stats import ttest_means, ztest_proportions
+from evidec.frequentist import ttest_means, ztest_proportions
 
 
 def test_z検定が期待値を返す():

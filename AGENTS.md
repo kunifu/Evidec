@@ -8,15 +8,15 @@ Evidec は **A/B テスト結果を統計評価し、Markdown エビデンスを
 - 対応データ: 0/1 配列・連続値配列・集計済み `(success, total)` タプル。
 
 ## 設計原則（tests/arch/ が監視）
-- Facade: 公開は `evidec/core.py` のみ。`evidec/__init__.py` は core から import するだけ。`evidec/core/` ディレクトリを作らない。
-- 責務分離: `experiment`(実行・結果), `decision`(判定), `report`(レポート生成), `stats`(検定)。
+- Facade: 公開は `evidec.core` パッケージ（`evidec/core/__init__.py`）経由に統一。`evidec/__init__.py` は core を再輸出するのみ。
+- 責務分離: `core/`(Experiment/DecisionRule/EvidenceReport)、`report/`(renderer)、`frequentist/`(頻度論検定)、`utils/`(横断)、`bayesian/`(拡張)。
 - 依存: 循環禁止。
 - レイヤ依存: ドメイン間の横断は禁止。共有したいものは `utils/` に移す。許可マトリクスは `tests/arch/layers.py` を参照。
 - 互換性: 公開クラスのシグネチャ・挙動を勝手に変えない。
 
 ## 使い方フロー（最小）
 1) `Experiment(name, metric, variant_names)` を用意。  
-2) `result = exp.fit(control, treatment)` で `StatResult`。比率→`stats/ztest.py`、連続→`stats/ttest.py` を自動選択。  
+2) `result = exp.fit(control, treatment)` で `StatResult`。比率→`frequentist/ztest.py`、連続→`frequentist/ttest.py` を自動選択。  
 3) `rule = DecisionRule(alpha, min_lift, metric_goal="increase"/"decrease", min_effect_size=None)`。  
 4) `decision = rule.judge(result)` で GO/NO_GO/INCONCLUSIVE。  
 5) `report = EvidenceReport.from_result(exp, rule, decision, result)` → `report.markdown`。
@@ -34,6 +34,6 @@ Evidec は **A/B テスト結果を統計評価し、Markdown エビデンスを
 - アーキテクチャ違反は `tests/arch/` が検出。
 
 ## Agent チェックリスト
-- まず `evidec/core.py`, `stats/`, `report/`, `tests/` を確認。  
+- まず `evidec/core/`, `report/`, `frequentist/`, `tests/` を確認。  
 - 変更箇所（ファイル・関数・クラス）を明示して提案。  
 - API 互換とテストを最優先し、`poe check` が通る状態を目指す。

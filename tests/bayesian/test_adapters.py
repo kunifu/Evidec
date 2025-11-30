@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from evidec.bayes.adapters import fit_beta_binomial_from_arrays
-from evidec.bayes.beta_binomial import BayesResult
+from evidec.bayesian.adapters import fit_beta_binomial_from_arrays
+from evidec.bayesian.beta_binomial import BayesResult
 
 
 def test配列を集計してBayesResultを返す() -> None:

@@ -181,7 +181,7 @@ evidec/
 │   ├─ experiment.py
 │   ├─ decision_rule.py
 │   └─ report.py
-├─ stats/
+├─ frequentist/
 │   ├─ ztest.py
 │   └─ ttest.py
 └─ report/

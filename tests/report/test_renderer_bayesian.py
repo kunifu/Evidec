@@ -1,5 +1,5 @@
 from evidec import DecisionRule, EvidenceReport, Experiment
-from evidec.bayes.beta_binomial import BayesResult
+from evidec.bayesian.beta_binomial import BayesResult
 from evidec.report.renderer import render_markdown
 
 

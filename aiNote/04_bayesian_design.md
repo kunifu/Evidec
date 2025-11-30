@@ -1,11 +1,11 @@
 # ベイズ推論モジュール 設計書
 
 ## 1. モジュール構成
-`evidec` パッケージ直下に `bayes` サブパッケージを新設する。
+`evidec` パッケージ直下に `bayesian` サブパッケージを新設する。
 
 ```
 evidec/
-  bayes/
+  bayesian/
     __init__.py
     beta_binomial.py      # Beta-Binomial モデルの実装
     decision_rule.py      # ベイズ判定ルール (GO/SAFE/NO-GO)
@@ -18,7 +18,7 @@ evidec/
 ベイズ推論の結果を保持する不変データクラス。レポート出力と判定で共通利用する。
 
 ```python
-# evidec/bayes/beta_binomial.py
+# evidec/bayesian/beta_binomial.py
 
 @dataclass(frozen=True)
 class BayesResult:
@@ -49,7 +49,7 @@ class BayesResult:
 ### 3.1 fit_beta_binomial
 
 ```python
-# evidec/bayes/beta_binomial.py
+# evidec/bayesian/beta_binomial.py
 
 def fit_beta_binomial(
     control_success: int,
@@ -92,7 +92,7 @@ def fit_beta_binomial(
 集計済みデータを持たない利用者向けに、0/1 配列を受け取り集計してから `fit_beta_binomial` を呼ぶ薄いヘルパーを用意してもよい。
 
 ```python
-# evidec/bayes/adapters.py
+# evidec/bayesian/adapters.py
 
 def fit_beta_binomial_from_arrays(
     control: ArrayLike,
@@ -167,7 +167,7 @@ def render_markdown(
 頻度論的 DecisionRule を置き換えず、ベイズ専用の軽量ルールを追加する。
 
 ```python
-# evidec/bayes/decision_rule.py
+# evidec/bayesian/decision_rule.py
 
 @dataclass(frozen=True)
 class BayesDecisionRule:
@@ -215,15 +215,15 @@ class BayesDecisionRule:
 
 ## 6. テスト計画
 
-- `tests/bayes/test_beta_binomial.py`
+- `tests/bayesian/test_beta_binomial.py`
   - 改善確率・非劣性確率の計算が期待通り（簡単な手計算ケース）
   - `tolerance` 符号の解釈確認（負の許容下限で `p_above_tol` が増えること）
   - `seed` による再現性（同じ seed で結果が一致）
   - 大規模サンプルで計算が秒オーダーで完了すること（性能回帰テストは time 上限付き）
-- `tests/bayes/test_decision_rule.py`
+- `tests/bayesian/test_decision_rule.py`
   - GO/SAFE/NO-GO/INCONCLUSIVE の各分岐をカバー
   - SAFE 判定が `DecisionStatus` を拡張しない場合の表示確認
-- `tests/report/test_renderer_bayes.py`
+- `tests/report/test_renderer_bayesian.py`
   - `bayes_result` あり/なしで Markdown が後方互換で生成される
   - `params` 辞書が空でも KeyError にならないこと
 
@@ -239,10 +239,10 @@ class BayesDecisionRule:
 - SAFE ステータス表示は非破壊的に扱う（理由文に明記しつつ `DecisionStatus` は維持）。必要に応じて今後のメジャーアップデートで拡張を検討する。
 
 ## 9. 実装ステップ
-1. `evidec/bayes/beta_binomial.py` に `BayesResult`・`fit_beta_binomial` を実装し、`params` に必要メタ情報を格納する。
-2. `evidec/bayes/adapters.py`（任意）で配列入力ヘルパーを実装する。
-3. `evidec/bayes/decision_rule.py` にベイズ判定ロジックを実装し、既存 `Decision` を返す形にする。
+1. `evidec/bayesianian/beta_binomial.py` に `BayesResult`・`fit_beta_binomial` を実装し、`params` に必要メタ情報を格納する。
+2. `evidec/bayesianian/adapters.py`（任意）で配列入力ヘルパーを実装する。
+3. `evidec/bayesianian/decision_rule.py` にベイズ判定ロジックを実装し、既存 `Decision` を返す形にする。
 4. `evidec/core/report.py` を拡張して `bayes_result` を受け取れるようにする。
 5. `evidec/report/renderer.py` を拡張し、ベイズセクションを条件付きでレンダリングする。
 6. `evidec/__init__.py` で公開範囲を整理（必要であれば）。
-7. テスト追加：`tests/bayes/` 配下とレンダラー周りを新設し、決定木と再現性をカバーする。
+7. テスト追加：`tests/bayesian/` 配下とレンダラー周りを新設し、決定木と再現性をカバーする。
